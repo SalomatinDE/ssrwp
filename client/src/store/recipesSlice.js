@@ -28,7 +28,7 @@ export const fetchRecipeById = createAsyncThunk(
           const favsResponse = await api.get('/favorites');
           const favorites = favsResponse.data.favorites || [];
           recipe.isFavorited = favorites.some(fav => fav.id === recipe.id);
-        } catch (e) { /* игнорируем, если не удалось */ }
+        } catch  { /* игнорируем, если не удалось */ }
       }
       return recipe;
     } catch (err) {

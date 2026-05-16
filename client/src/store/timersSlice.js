@@ -30,7 +30,7 @@ function playBeep() {
     gain.connect(ctx.destination);
     osc.start();
     osc.stop(ctx.currentTime + 0.2);
-  } catch (e) {
+  } catch {
     // ignore
   }
 }
@@ -107,7 +107,7 @@ export const { addTimer, toggleTimer, removeTimer, updateTimer, timerCompleted, 
 export function initWorkerListener(dispatch) {
   const w = getWorker();
   w.onmessage = (e) => {
-    const { type, id, remaining, status } = e.data;
+    const { type, id, remaining } = e.data;
     switch (type) {
       case 'tick':
         dispatch(updateTimer({ id, remaining }));
