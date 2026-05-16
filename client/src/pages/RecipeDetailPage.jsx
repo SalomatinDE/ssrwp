@@ -39,6 +39,7 @@ import KitchenTimer from '../components/KitchenTimer';
 import CommentsSection from '../components/CommentsSection';
 
 export default function RecipeDetailPage() {
+  const [dialogKey, setDialogKey] = useState(0);
   const { id } = useParams();
   const dispatch = useDispatch();
   const { currentRecipe, loadingDetail, errorDetail, ratingLoading } = useSelector(
@@ -170,8 +171,7 @@ export default function RecipeDetailPage() {
               <IconButton onClick={handleFavoriteToggle} color="error">
                 {isFavorited ? <FavoriteIcon /> : <FavoriteBorderIcon />}
               </IconButton>
-              <IconButton onClick={() => setDialogOpen(true)} title="Добавить в коллекцию">
-                <BookmarkAddIcon />
+              <IconButton onClick={() => { setDialogOpen(true); setDialogKey(k => k + 1); }} title="Добавить в коллекцию">                <BookmarkAddIcon />
               </IconButton>
             </>
           )}
@@ -268,9 +268,10 @@ export default function RecipeDetailPage() {
       <CommentsSection recipeId={currentRecipe.id} />
 
       <AddToCollectionDialog
-        open={dialogOpen}
-        onClose={() => setDialogOpen(false)}
-        recipeId={currentRecipe.id}
+      key={dialogKey}
+      open={dialogOpen}
+      onClose={() => setDialogOpen(false)}
+      recipeId={currentRecipe.id}
       />
     </Paper>
   );

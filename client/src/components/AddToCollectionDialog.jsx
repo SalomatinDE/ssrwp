@@ -26,14 +26,6 @@ export default function AddToCollectionDialog({ open, onClose, recipeId }) {
     }
   }, [open, dispatch, user]);
 
-  useEffect(() => {
-    // Отмечаем, в каких коллекциях уже есть рецепт (исходя из списка коллекций, но API не даёт такой информации сразу)
-    // Здесь упрощённо: запросим коллекции и проверим? Лучше сделать отдельный запрос на проверку, но для MVP сбросим выбранные
-    if (open) {
-      setSelected({});
-    }
-  }, [open]);
-
   const handleToggle = (collectionId) => {
     setSelected(prev => ({ ...prev, [collectionId]: !prev[collectionId] }));
   };
