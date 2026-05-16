@@ -11,13 +11,12 @@ import {
   Alert,
   Card,
   CardContent,
-  CardActions,
   Chip,
   Rating,
 } from '@mui/material';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import { fetchAllIngredients, generateMenu, clearResults } from '../store/menuSlice';
+import { fetchAllIngredients, generateMenu } from '../store/menuSlice';
 
 export default function MenuGeneratorPage() {
   const dispatch = useDispatch();

@@ -120,14 +120,6 @@ export default function KitchenTimer() {
     }
   };
 
-  // Обработка кастомного ввода
-  useEffect(() => {
-    // Если выбран пресет 'Свой', пересчитаем при изменении полей
-    if (PRESETS.find((p) => p.label === 'Свой' && totalSeconds !== 0)) {
-      // Но проще обновлять totalSeconds сразу при изменении полей, если активно кастомное
-    }
-  }, [customMinutes, customSeconds]);
-
   const handleCustomChange = () => {
     const mins = parseInt(customMinutes, 10) || 0;
     const secs = parseInt(customSeconds, 10) || 0;

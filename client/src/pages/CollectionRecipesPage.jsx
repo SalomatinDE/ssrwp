@@ -7,7 +7,6 @@ import {
   Card,
   CardMedia,
   CardContent,
-  CardActions,
   Grid,
   Pagination,
   CircularProgress,

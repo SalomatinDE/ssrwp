@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import api from '../axios';
@@ -22,6 +22,7 @@ import {
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import BookmarkAddIcon from '@mui/icons-material/BookmarkAdd';
+import TimerIcon from '@mui/icons-material/Timer';
 import {
   fetchRecipeById,
   rateRecipe,
@@ -32,11 +33,10 @@ import {
   addToCollection,
   removeFromCollection,
 } from '../store/collectionsSlice';
+import { addTimer } from '../store/timersSlice';
 import AddToCollectionDialog from '../components/AddToCollectionDialog';
 import KitchenTimer from '../components/KitchenTimer';
 import CommentsSection from '../components/CommentsSection';
-import { addTimer } from '../store/timersSlice';
-import TimerIcon from '@mui/icons-material/Timer';
 
 export default function RecipeDetailPage() {
   const { id } = useParams();
@@ -44,14 +44,16 @@ export default function RecipeDetailPage() {
   const { currentRecipe, loadingDetail, errorDetail, ratingLoading } = useSelector(
     (state) => state.recipes
   );
-  const { user, token } = useSelector((state) => state.auth);
+  const { token } = useSelector((state) => state.auth);
   const { list: collections } = useSelector((state) => state.collections);
 
   const [isFavorited, setIsFavorited] = useState(false);
-  const [userRating, setUserRating] = useState(0);
-  const [favCollectionId, setFavCollectionId] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [checkingFavorite, setCheckingFavorite] = useState(false);
+
+  const favCollectionId = useMemo(() => {
+    const fav = collections.find((c) => c.is_favorites);
+    return fav ? fav.id : null;
+  }, [collections]);
 
   // Загрузка рецепта
   useEffect(() => {
@@ -75,39 +77,30 @@ export default function RecipeDetailPage() {
     }
   }, [dispatch, token]);
 
-  // Определяем ID избранной коллекции
-  useEffect(() => {
-    if (collections.length > 0) {
-      const fav = collections.find((c) => c.is_favorites);
-      if (fav) {
-        setFavCollectionId(fav.id);
-      }
-    }
-  }, [collections]);
-
-  // Проверяем, есть ли рецепт в избранном (по коллекции "Избранное")
+  // Проверяем, в избранном ли рецепт
   useEffect(() => {
     if (!token || !favCollectionId || !currentRecipe) return;
-    setCheckingFavorite(true);
-    // Запрашиваем рецепты избранной коллекции (лимит большой, чтобы проверить наличие)
+
+    let cancelled = false;
     api
       .get(`/collections/${favCollectionId}/recipes`, { params: { limit: 100 } })
       .then((res) => {
-        const found = res.data.recipes.some((r) => r.id === currentRecipe.id);
-        setIsFavorited(found);
+        if (!cancelled) {
+          const found = res.data.recipes.some((r) => r.id === currentRecipe.id);
+          setIsFavorited(found);
+        }
       })
-      .catch(() => {})
-      .finally(() => setCheckingFavorite(false));
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
   }, [token, favCollectionId, currentRecipe]);
 
-  // Синхронизация пользовательской оценки
-  useEffect(() => {
-    if (currentRecipe) {
-      setUserRating(currentRecipe.userRating || 0);
-    }
-  }, [currentRecipe]);
+  // Пользовательская оценка теперь берётся напрямую из currentRecipe (обновляется через Redux)
+  const userRating = currentRecipe?.userRating || 0;
 
-  // Переключение избранного (теперь через коллекцию)
+  // Переключение избранного
   const handleFavoriteToggle = async () => {
     if (!token) {
       alert('Войдите, чтобы добавить в избранное');
@@ -122,8 +115,8 @@ export default function RecipeDetailPage() {
         await dispatch(addToCollection({ collectionId: favCollectionId, recipeId: currentRecipe.id })).unwrap();
         setIsFavorited(true);
       }
-    } catch (err) {
-      // ошибка уже обработана
+    } catch {
+      // ignore
     }
   };
 
@@ -132,8 +125,9 @@ export default function RecipeDetailPage() {
     if (!token || !newValue) return;
     try {
       await dispatch(rateRecipe({ recipeId: currentRecipe.id, score: newValue })).unwrap();
-      setUserRating(newValue);
-    } catch (err) { /* игнорируем */ }
+    } catch {
+      // ignore
+    }
   };
 
   if (loadingDetail) {
@@ -168,13 +162,12 @@ export default function RecipeDetailPage() {
 
   return (
     <Paper elevation={3} sx={{ p: 4 }}>
-      {/* Заголовок и кнопки */}
       <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" mb={2}>
         <Typography variant="h4">{title}</Typography>
         <Box>
           {token && (
             <>
-              <IconButton onClick={handleFavoriteToggle} color="error" disabled={checkingFavorite}>
+              <IconButton onClick={handleFavoriteToggle} color="error">
                 {isFavorited ? <FavoriteIcon /> : <FavoriteBorderIcon />}
               </IconButton>
               <IconButton onClick={() => setDialogOpen(true)} title="Добавить в коллекцию">
@@ -185,14 +178,12 @@ export default function RecipeDetailPage() {
         </Box>
       </Box>
 
-      {/* Автор */}
       {author && (
         <Typography variant="subtitle1" color="text.secondary" mb={2}>
           Автор: {author.username}
         </Typography>
       )}
 
-      {/* Изображение */}
       {image_url && (
         <CardMedia
           component="img"
@@ -203,18 +194,15 @@ export default function RecipeDetailPage() {
         />
       )}
 
-      {/* Характеристики */}
       <Box display="flex" gap={2} mb={3}>
         <Chip label={`Время: ${cooking_time} мин`} variant="outlined" color="primary" />
         <Chip label={`Сложность: ${difficulty}`} variant="outlined" color="secondary" />
       </Box>
 
-      {/* Описание */}
       <Typography variant="body1" paragraph>
         {description}
       </Typography>
 
-      {/* Ингредиенты */}
       <Typography variant="h5" gutterBottom mt={4}>
         Ингредиенты
       </Typography>
@@ -231,7 +219,6 @@ export default function RecipeDetailPage() {
         ))}
       </List>
 
-      {/* Шаги */}
       <Typography variant="h5" gutterBottom mt={4}>
         Шаги приготовления
       </Typography>
@@ -243,20 +230,19 @@ export default function RecipeDetailPage() {
               <Box display="flex" alignItems="center" gap={1} mt={0.5}>
                 <Chip size="small" label={`${step.duration} мин`} />
                 <Button
-                size="small"
-                variant="outlined"
-                startIcon={<TimerIcon />}
-                onClick={() => dispatch(addTimer({ label: step.instruction, duration: step.duration * 60 }))}
+                  size="small"
+                  variant="outlined"
+                  startIcon={<TimerIcon />}
+                  onClick={() => dispatch(addTimer({ label: step.instruction, duration: step.duration * 60 }))}
                 >
                   Запустить таймер
-                  </Button>
-                  </Box>
-                )}
-                </Box>
-              ))}
+                </Button>
+              </Box>
+            )}
+          </Box>
+        ))}
       </Box>
 
-      {/* Рейтинг */}
       <Box mt={4} display="flex" alignItems="center" gap={2}>
         <Typography variant="h6">Рейтинг:</Typography>
         <Rating value={parseFloat(rating_average) || 0} precision={0.5} readOnly />
@@ -265,7 +251,6 @@ export default function RecipeDetailPage() {
         </Typography>
       </Box>
 
-      {/* Своя оценка (только для авторизованных) */}
       {token && (
         <Box mt={2}>
           <Typography variant="body1">Ваша оценка:</Typography>
@@ -279,9 +264,9 @@ export default function RecipeDetailPage() {
         </Box>
       )}
 
+      <KitchenTimer />
       <CommentsSection recipeId={currentRecipe.id} />
 
-      {/* Диалог добавления в коллекцию */}
       <AddToCollectionDialog
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}

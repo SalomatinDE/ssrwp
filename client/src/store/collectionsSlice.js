@@ -135,9 +135,7 @@ const collectionsSlice = createSlice({
       .addCase(fetchCollectionRecipes.rejected, (state) => { state.collectionLoading = false; })
       // Для addToCollection/removeFromCollection можно не менять state.list,
       // но при необходимости обновим конкретную коллекцию (если загружена)
-      .addCase(addToCollection.fulfilled, (state, action) => {
-        // если мы на странице этой коллекции, можно добавить рецепт в массив (но проще перезагрузить)
-      })
+      .addCase(addToCollection.fulfilled, () => {})
       .addCase(removeFromCollection.fulfilled, (state, action) => {
         if (state.currentCollection?.id === action.payload.collectionId) {
           state.collectionRecipes = state.collectionRecipes.filter(r => r.id !== action.payload.recipeId);

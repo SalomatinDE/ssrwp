@@ -12,7 +12,6 @@ import {
   ListItem,
   ListItemText,
   ListItemSecondaryAction,
-  CircularProgress,
 } from '@mui/material';
 import TimerIcon from '@mui/icons-material/Timer';
 import { toggleTimer, removeTimer } from '../store/timersSlice';

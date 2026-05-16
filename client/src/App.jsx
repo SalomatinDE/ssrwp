@@ -25,7 +25,7 @@ function App() {
     if (token) {
       dispatch(fetchCurrentUser());
     }
-  }, []); // один раз при монтировании, token уже доступен из хранилища
+  }, [dispatch, token]); // один раз при монтировании, token уже доступен из хранилища
 
   if (!initialized && token) {
     // Ждём проверки токена
